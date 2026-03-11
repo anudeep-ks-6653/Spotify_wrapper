@@ -1,0 +1,194 @@
+package com.spotify.wrapper.controller;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.spotify.wrapper.entity.User;
+import com.spotify.wrapper.repository.UserRepository;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.Map;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/auth")
+@CrossOrigin(origins = "http://localhost:3000")
+public class AuthController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+    
+    @Value("${spotify.client.id}")
+    private String clientId;
+    
+    @Value("${spotify.client.secret}")
+    private String clientSecret;
+    
+    @Value("${spotify.redirect.uri}")
+    private String redirectUri;
+    
+    @Value("${spotify.scope}")
+    private String scope;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    private final HttpClient httpClient = HttpClients.createDefault();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    
+    @GetMapping("/login")
+    public ResponseEntity<String> login() {
+        logger.info("OAuth login initiated - generating authorization URL");
+        
+        String state = generateState();
+        String encodedScope = URLEncoder.encode(scope, StandardCharsets.UTF_8);
+        
+        String authUrl = "https://accounts.spotify.com/authorize?" +
+                "response_type=code" +
+                "&client_id=" + clientId +
+                "&scope=" + encodedScope +
+                "&redirect_uri=" + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8) +
+                "&state=" + state;
+        
+        logger.info("Generated authorization URL with state: {} and redirect_uri: {}", state, redirectUri);
+        return ResponseEntity.ok(authUrl);
+    }
+    
+    @PostMapping("/callback")
+    public ResponseEntity<Map<String, String>> callback(@RequestParam String code, @RequestParam String state) {
+        logger.info("OAuth callback received with state: {}, code: {}...", state, code.substring(0, 10));
+        
+        try {
+            // Exchange code for access token
+            logger.info("Exchanging authorization code for access token");
+            String tokenUrl = "https://accounts.spotify.com/api/token";
+            
+            HttpPost request = new HttpPost(tokenUrl);
+            request.setHeader("Content-Type", "application/x-www-form-urlencoded");
+            
+            String auth = Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes());
+            request.setHeader("Authorization", "Basic " + auth);
+            
+            String body = "grant_type=authorization_code" +
+                    "&code=" + code +
+                    "&redirect_uri=" + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8);
+            request.setEntity(new StringEntity(body));
+            
+            HttpResponse response = httpClient.execute(request);
+            String responseBody = EntityUtils.toString(response.getEntity());
+            
+            logger.info("Token exchange response status: {}", response.getStatusLine().getStatusCode());
+            
+            Map<String, Object> tokenResponse = objectMapper.readValue(responseBody, Map.class);
+            //print tokenResponse in logs
+            logger.info("Token exchange response: {}", tokenResponse);
+            String accessToken = (String) tokenResponse.get("access_token");
+            String refreshToken = (String) tokenResponse.get("refresh_token");
+            int expiresIn = (Integer) tokenResponse.get("expires_in");
+            
+            if (accessToken == null) {
+                logger.error("Failed to obtain access token from Spotify. Response: {}", responseBody);
+                return ResponseEntity.badRequest().build();
+            }
+            
+            logger.info("Successfully obtained access token, expires in: {} seconds", expiresIn);
+            
+            // Get user profile
+            logger.info("Fetching user profile from Spotify");
+            Map<String, String> userProfile = getUserProfile(accessToken);
+            
+            // Save or update user
+            logger.info("Saving user data for Spotify user: {}", userProfile.get("id"));
+            User user = saveOrUpdateUser(userProfile, accessToken, refreshToken, expiresIn);
+            
+            logger.info("OAuth flow completed successfully for user: {}", user.getDisplayName());
+            
+            return ResponseEntity.ok(Map.of(
+                    "success", "true",
+                    "userId", user.getSpotifyUserId(),
+                    "displayName", user.getDisplayName()
+            ));
+            
+        } catch (Exception e) {
+            logger.error("OAuth callback failed", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<Map<String, String>> getUser(@PathVariable String userId) {
+        logger.info("Fetching user data for userId: {}", userId);
+        
+        Optional<User> userOpt = userRepository.findBySpotifyUserId(userId);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            logger.info("User found: {}", user.getDisplayName());
+            return ResponseEntity.ok(Map.of(
+                    "userId", user.getSpotifyUserId(),
+                    "displayName", user.getDisplayName(),
+                    "email", user.getEmail()
+            ));
+        }
+        
+        logger.warn("User not found for userId: {}", userId);
+        return ResponseEntity.notFound().build();
+    }
+    
+    private Map<String, String> getUserProfile(String accessToken) throws IOException {
+        String profileUrl = "https://api.spotify.com/v1/me";
+        
+        HttpGet request = new HttpGet(profileUrl);
+        request.setHeader("Authorization", "Bearer " + accessToken);
+        
+        HttpResponse response = httpClient.execute(request);
+        String responseBody = EntityUtils.toString(response.getEntity());
+        
+        return objectMapper.readValue(responseBody, Map.class);
+    }
+    
+    private User saveOrUpdateUser(Map<String, String> profile, String accessToken, String refreshToken, int expiresIn) {
+        String spotifyUserId = profile.get("id");
+        String displayName = profile.get("display_name");
+        String email = profile.get("email");
+        
+        Optional<User> existingUser = userRepository.findBySpotifyUserId(spotifyUserId);
+        
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            user.setAccessToken(accessToken);
+            user.setRefreshToken(refreshToken);
+            user.setTokenExpiresAt(LocalDateTime.now().plusSeconds(expiresIn));
+            user.setDisplayName(displayName);
+            user.setEmail(email);
+            return userRepository.save(user);
+        } else {
+            User newUser = new User(
+                    spotifyUserId,
+                    displayName,
+                    email,
+                    accessToken,
+                    refreshToken,
+                    LocalDateTime.now().plusSeconds(expiresIn)
+            );
+            return userRepository.save(newUser);
+        }
+    }
+    
+    private String generateState() {
+        return java.util.UUID.randomUUID().toString();
+    }
+}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Wrapper - Setup Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1ed760 0%, #191414 50%, #1db954 100%);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+        }
+        .btn {
+            background: #1db954;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background: #1ed760;
+            transform: translateY(-2px);
+        }
+        .status {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Spotify Wrapper</h1>
+        <h2>Setup Status Check</h2>
+        
+        <div class="status">
+            <h3>✅ Project Structure Created</h3>
+            <ul>
+                <li>Frontend (React) - Files created</li>
+                <li>Backend (Java Spring Boot) - Files created</li>
+                <li>Database setup script - Ready</li>
+                <li>Configuration files - Ready</li>
+            </ul>
+        </div>
+
+        <div class="status">
+            <h3>🔄 Installation Progress</h3>
+            <ol>
+                <li><strong>⚠️ Frontend:</strong> npm install was interrupted - needs completion</li>
+                <li><strong>✅ Maven:</strong> Maven 3.9.12 installed successfully</li>
+                <li><strong>🔄 Backend:</strong> Starting Spring Boot server</li>
+                <li><strong>⏳ MySQL:</strong> Ensure MySQL is running</li>
+                <li><strong>⏳ Configure Spotify:</strong> Update application.properties with your Spotify API credentials</li>
+            </ol>
+        </div>
+
+        <div class="status">
+            <h3>🔧 Quick Commands</h3>
+            <p><strong>Frontend:</strong></p>
+            <code>cd frontend && npm install && npm start</code>
+            
+            <p><strong>Backend (Maven ready!):</strong></p>
+            <code>cd backend && mvn spring-boot:run</code>
+        </div>
+
+        <div class="status">
+            <h3>📍 Expected URLs</h3>
+            <p>Frontend: <a href="http://127.0.0.1:3000" style="color: #1db954;">http://127.0.0.1:3000</a></p>
+            <p>Backend: <a href="http://127.0.0.1:9090" style="color: #1db954;">http://127.0.0.1:9090</a></p>
+        </div>
+
+        <a href="http://127.0.0.1:3000" class="btn">Try Frontend (After Setup)</a>
+        <a href="http://127.0.0.1:9090" class="btn">Try Backend (After Setup)</a>
+    </div>
+</body>
+</html>
