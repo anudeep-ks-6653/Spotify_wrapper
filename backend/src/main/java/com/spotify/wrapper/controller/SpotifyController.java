@@ -14,7 +14,6 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/spotify")
-@CrossOrigin(origins = "http://localhost:3000")
 public class SpotifyController {
     
     private static final Logger logger = LoggerFactory.getLogger(SpotifyController.class);

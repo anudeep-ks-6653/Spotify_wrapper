@@ -126,9 +126,9 @@ const App = {
                 break;
             case 'library':
                 // Load library content when tab is activated
-                if (window.Library) {
-                    Library.onTabActivated();
-                }
+                
+                Library.onTabActivated();
+                
                 break;
             case 'devices':
                 // Refresh devices when tab is activated

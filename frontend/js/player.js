@@ -4,10 +4,13 @@ const PlayerModule = {
     isPlaying: false,
     updateTimeout: null,
     deviceId: null,
+    keyboardHandler: null,
+    keyboardShortcutsInitialized: false,
 
     // Initialize player module
     init() {
         this.bindEvents();
+        this.initKeyboardShortcuts();
         this.startUpdateLoop();
         this.updateCurrentTrack();
     },
@@ -250,8 +253,14 @@ const PlayerModule = {
     
     // Handle keyboard shortcuts
     handleKeyboardShortcuts(event) {
+        // Handle keyboard controls only when player tab is active.
+        if (!window.App || App.getCurrentTab() !== 'player') {
+            return;
+        }
+
         // Only handle shortcuts if not typing in an input
-        if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        const targetTag = event.target.tagName;
+        if (targetTag === 'INPUT' || targetTag === 'TEXTAREA' || event.target.isContentEditable) {
             return;
         }
         
@@ -293,7 +302,16 @@ const PlayerModule = {
     
     // Initialize keyboard shortcuts
     initKeyboardShortcuts() {
-        $(document).on('keydown', this.handleKeyboardShortcuts.bind(this));
+        if (this.keyboardShortcutsInitialized) {
+            return;
+        }
+
+        if (!this.keyboardHandler) {
+            this.keyboardHandler = this.handleKeyboardShortcuts.bind(this);
+        }
+
+        $(document).off('keydown.playerShortcuts').on('keydown.playerShortcuts', this.keyboardHandler);
+        this.keyboardShortcutsInitialized = true;
     },
     
     // Cleanup when module is destroyed
@@ -302,9 +320,16 @@ const PlayerModule = {
         if (this.volumeTimeout) {
             clearTimeout(this.volumeTimeout);
         }
-        $(document).off('keydown', this.handleKeyboardShortcuts);
+        $(document).off('keydown.playerShortcuts');
+        this.keyboardShortcutsInitialized = false;
     }
 };
+
+// Bind shortcuts as soon as the document is ready so key handling is available
+// even before auth-triggered module initialization finishes.
+$(document).ready(() => {
+    PlayerModule.initKeyboardShortcuts();
+});
 
 // Export for global access
 window.PlayerModule = PlayerModule;

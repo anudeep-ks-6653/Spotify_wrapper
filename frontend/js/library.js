@@ -6,6 +6,8 @@ const Library = {
     playlistsLimit: 20,
     likedSongsLimit: 20,
     recentlyPlayedLimit: 20,
+    playlistsNextOffset: null,
+    playlistsLoading: false,
     recentlyPlayedCursor: null, // cursor for loading more recently played
     recentlyPlayedLoading: false, // flag to prevent duplicate scroll loads
     recentlyPlayedIntervalId: null,
@@ -89,6 +91,13 @@ const Library = {
         // Infinite scroll for recently played
         this.scrollHandler = this.handleRecentlyPlayedScroll.bind(this);
 
+        // Load more playlists
+        $(document).on('click', '#load-more-playlists', () => {
+            if (this.playlistsNextOffset !== null) {
+                this.loadMyPlaylists(this.playlistsNextOffset);
+            }
+        });
+
         // Play buttons (delegated)
         $(document).on('click', '#my-playlists-list .play-playlist-btn', this.handlePlayPlaylist.bind(this));
         $(document).on('click', '#liked-songs-list .play-track-btn', this.handlePlayTrack.bind(this));
@@ -165,51 +174,76 @@ const Library = {
     // Load user's playlists
     async loadMyPlaylists(offset = 0) {
         if (!SpotifyAPI.userId) return;
+        if (this.playlistsLoading) return;
 
         const $container = $('#my-playlists-list');
         const $pagination = $('#playlists-pagination');
+        const isLoadMore = offset > 0;
+        this.playlistsLoading = true;
 
-        // Show loading
-        $container.html(`
-            <div class="col-12 text-center text-muted">
-                <div class="spinner-border text-success" role="status">
-                    <span class="visually-hidden">Loading...</span>
+        if (!isLoadMore) {
+            // Fresh load — show spinner and reset load-more state.
+            $container.html(`
+                <div class="col-12 text-center text-muted">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading your playlists...</p>
                 </div>
-                <p class="mt-2">Loading your playlists...</p>
-            </div>
-        `);
+            `);
+            $pagination.empty();
+            this.playlistsNextOffset = null;
+            $('#load-more-playlists-wrapper').remove();
+        } else {
+            $container.after(`
+                <div id="load-more-playlists-wrapper" class="d-flex justify-content-center mt-3 mb-3">
+                    <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+                    <span class="text-muted">Loading more...</span>
+                </div>
+            `);
+        }
 
         try {
             const response = await SpotifyAPI.getMyPlaylists(this.playlistsLimit, offset);
 
-            this.currentPlaylistsPage = Math.floor(offset / this.playlistsLimit);
-            this.displayPlaylists(response, $container, $pagination);
+            this.displayPlaylists(response, $container, isLoadMore);
             this.isLoaded.playlists = true;
 
         } catch (error) {
             console.error('Error loading playlists:', error);
-            $container.html(`
-                <div class="col-12">
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Failed to load playlists. Please try again.
+            $('#load-more-playlists-wrapper').remove();
+            if (!isLoadMore) {
+                $container.html(`
+                    <div class="col-12">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Failed to load playlists. Please try again.
+                        </div>
                     </div>
-                </div>
-            `);
+                `);
+            }
+        } finally {
+            this.playlistsLoading = false;
         }
     },
 
-    displayPlaylists(data, $container, $pagination) {
-        $container.empty();
-        $pagination.empty();
+    displayPlaylists(data, $container, isAppend = false) {
+        if (!isAppend) {
+            $container.empty();
+        }
+
+        $('#load-more-playlists-wrapper').remove();
 
         if (!data.items || data.items.length === 0) {
-            $container.html(`
-                <div class="col-12 text-center text-muted">
-                    <i class="fas fa-list display-4 mb-3"></i>
-                    <p>No playlists found. Create some playlists in Spotify!</p>
-                </div>
-            `);
+            if (!isAppend) {
+                $container.html(`
+                    <div class="col-12 text-center text-muted">
+                        <i class="fas fa-list display-4 mb-3"></i>
+                        <p>No playlists found. Create some playlists in Spotify!</p>
+                    </div>
+                `);
+            }
+            this.playlistsNextOffset = null;
             return;
         }
 
@@ -229,8 +263,36 @@ const Library = {
             $container.append(this.templates.playlist(templateData));
         });
 
-        // Add pagination
-        this.renderPagination($pagination, data.total, data.offset, this.playlistsLimit, 'playlists');
+        const nextOffset = this.extractOffsetFromSpotifyUrl(data.next);
+        this.playlistsNextOffset = Number.isFinite(nextOffset) ? nextOffset : null;
+
+        if (this.playlistsNextOffset !== null) {
+            $container.after(`
+                <div id="load-more-playlists-wrapper" class="text-center mt-3 mb-3">
+                    <button id="load-more-playlists" class="btn btn-outline-success">
+                        <i class="fas fa-plus me-2"></i>Load More
+                    </button>
+                </div>
+            `);
+        } else {
+            $container.after(`
+                <div id="load-more-playlists-wrapper" class="text-center text-muted mt-3 mb-3">
+                    <small><i class="fas fa-check-circle me-1"></i>All playlists loaded</small>
+                </div>
+            `);
+        }
+    },
+
+    extractOffsetFromSpotifyUrl(url) {
+        if (!url) return null;
+
+        try {
+            const parsedUrl = new URL(url);
+            const offset = parseInt(parsedUrl.searchParams.get('offset'));
+            return Number.isNaN(offset) ? null : offset;
+        } catch (error) {
+            return null;
+        }
     },
 
     // Load liked songs
@@ -566,10 +628,13 @@ const Library = {
         };
         this.currentPlaylistsPage = 0;
         this.currentLikedSongsPage = 0;
+        this.playlistsNextOffset = null;
+        this.playlistsLoading = false;
         this.recentlyPlayedCursor = null;
         this.recentlyPlayedLoading = false;
         this.stopRecentlyPlayedAutoRefresh();
         this.unbindRecentlyPlayedScroll();
+        $('#load-more-playlists-wrapper').remove();
     }
 };
 
@@ -577,3 +642,6 @@ const Library = {
 $(document).ready(() => {
     Library.init();
 });
+
+// Export for global access
+window.Library = Library;
