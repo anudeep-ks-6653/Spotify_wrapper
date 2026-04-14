@@ -68,7 +68,6 @@ body {
 
 .search-result-card {
     transition: transform 0.2s;
-    cursor: pointer;
 }
 
 .search-result-card:hover {
@@ -78,7 +77,6 @@ body {
 
 .device-card {
     transition: all 0.2s;
-    cursor: pointer;
 }
 
 .device-card:hover {

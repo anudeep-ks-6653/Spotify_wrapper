@@ -150,6 +150,21 @@ const SpotifyAPI = {
         });
     },
 
+    // Seek to position
+    async seek(positionMs, deviceId = null) {
+        const params = new URLSearchParams({
+            userId: this.userId,
+            positionMs: Math.round(positionMs)
+        });
+        if (deviceId) {
+            params.append('deviceId', deviceId);
+        }
+        
+        return await this.makeRequest(`${CONFIG.ENDPOINTS.SPOTIFY.SEEK}?${params}`, {
+            method: 'PUT'
+        });
+    },
+
     // Set volume
     async setVolume(volume, deviceId = null) {
         const params = new URLSearchParams({

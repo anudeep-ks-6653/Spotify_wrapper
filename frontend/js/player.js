@@ -21,6 +21,8 @@ const PlayerModule = {
         $('#next-btn').on('click', this.handleNext.bind(this));
         $('#prev-btn').on('click', this.handlePrevious.bind(this));
         $('#volume-slider').on('input', this.handleVolumeChange.bind(this));
+        $('#progress-container').on('click', this.handleSeek.bind(this));
+        $('.seek-btn').on('click', this.handleSeekBySeconds.bind(this));
         
         // Stop event propagation on slider to prevent issues
         $('#volume-slider').on('mousedown touchstart', (e) => {
@@ -93,8 +95,12 @@ const PlayerModule = {
         $('#track-name').text(track.name);
         $('#track-artist').text(artists);
         
-        // Update progress bar
+        // Update progress bar and time labels
         $('#track-progress').css('width', `${progressPercent}%`);
+        $('#track-current-time').text(this.formatTime(progressMs));
+        $('#track-duration').text(this.formatTime(durationMs));
+        this.currentDurationMs = durationMs;
+        this.currentProgressMs = progressMs;
         
         // Show track info, hide no-track message
         $('#track-info').removeClass('d-none');
@@ -236,6 +242,60 @@ const PlayerModule = {
         }
     },
     
+    // Format milliseconds to m:ss
+    formatTime(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    },
+
+    // Handle seek by +/- seconds button click
+    async handleSeekBySeconds(event) {
+        if (!this.currentTrack) return;
+        
+        const seconds = parseInt($(event.currentTarget).data('seek'));
+        const offsetMs = seconds * 1000;
+        const currentMs = this.currentProgressMs || 0;
+        const positionMs = Math.max(0, Math.min(currentMs + offsetMs, this.currentDurationMs || 0));
+        
+        // Update UI immediately
+        const percent = this.currentDurationMs ? (positionMs / this.currentDurationMs) * 100 : 0;
+        $('#track-progress').css('width', `${percent}%`);
+        $('#track-current-time').text(this.formatTime(positionMs));
+        
+        try {
+            await SpotifyAPI.seek(positionMs, this.deviceId);
+            setTimeout(() => this.updateCurrentTrack(), 500);
+        } catch (error) {
+            console.error('Failed to seek:', error);
+            Utils.showError(error.message || CONFIG.ERRORS.PLAYBACK_FAILED);
+        }
+    },
+
+    // Handle seek on progress bar click
+    async handleSeek(event) {
+        if (!this.currentTrack || !this.currentDurationMs) return;
+        
+        const $bar = $('#progress-container');
+        const clickX = event.pageX - $bar.offset().left;
+        const barWidth = $bar.width();
+        const seekPercent = Math.max(0, Math.min(1, clickX / barWidth));
+        const positionMs = Math.round(seekPercent * this.currentDurationMs);
+        
+        // Update UI immediately
+        $('#track-progress').css('width', `${seekPercent * 100}%`);
+        $('#track-current-time').text(this.formatTime(positionMs));
+        
+        try {
+            await SpotifyAPI.seek(positionMs, this.deviceId);
+            setTimeout(() => this.updateCurrentTrack(), 500);
+        } catch (error) {
+            console.error('Failed to seek:', error);
+            Utils.showError(error.message || CONFIG.ERRORS.PLAYBACK_FAILED);
+        }
+    },
+
     // Get current track info
     getCurrentTrack() {
         return this.currentTrack;

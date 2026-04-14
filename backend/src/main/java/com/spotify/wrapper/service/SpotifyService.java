@@ -415,6 +415,41 @@ public class SpotifyService {
         }
     }
     
+    public void seek(String userId, long positionMs, String deviceId) throws IOException {
+        long startTime = System.currentTimeMillis();
+        logger.debug("=== SEEK METHOD CALLED ===");
+        logger.debug("userId: {}, positionMs: {}, deviceId: {}", userId, positionMs, deviceId);
+        
+        positionMs = Math.max(0, positionMs);
+        
+        String accessToken = tokenService.getAccessToken(userId);
+        
+        String url = SPOTIFY_API_BASE_URL + "/me/player/seek?position_ms=" + positionMs;
+        if (deviceId != null && !deviceId.isEmpty()) {
+            url += "&device_id=" + deviceId;
+        }
+        
+        HttpPut request = new HttpPut(url);
+        request.setHeader("Authorization", "Bearer " + accessToken);
+        
+        long apiStartTime = System.currentTimeMillis();
+        try (CloseableHttpResponse response = httpClient.execute(request)) {
+            long apiEndTime = System.currentTimeMillis();
+            logger.info("Spotify API /me/player/seek took {}ms", apiEndTime - apiStartTime);
+            
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode >= 400) {
+                String responseBody = EntityUtils.toString(response.getEntity());
+                logger.error("Seek request failed with status {}: {}", statusCode, responseBody);
+                throw new IOException("Spotify API error: " + responseBody);
+            }
+            EntityUtils.consume(response.getEntity());
+            
+            long endTime = System.currentTimeMillis();
+            logger.info("=== SEEK METHOD COMPLETED in {}ms (API: {}ms) ===", endTime - startTime, apiEndTime - apiStartTime);
+        }
+    }
+    
     public void setVolume(String userId, int volumePercent, String deviceId) throws IOException {
         long startTime = System.currentTimeMillis();
         logger.debug("=== SET VOLUME METHOD CALLED ===");

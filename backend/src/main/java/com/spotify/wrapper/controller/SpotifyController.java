@@ -199,6 +199,23 @@ public class SpotifyController {
         }
     }
     
+    @PutMapping("/seek")
+    public ResponseEntity<Void> seek(
+            @RequestParam String userId,
+            @RequestParam long positionMs,
+            @RequestParam(required = false) String deviceId) {
+        logger.info("Seek request - userId: {}, positionMs: {}, deviceId: {}", userId, positionMs, deviceId);
+        
+        try {
+            spotifyService.seek(userId, positionMs, deviceId);
+            logger.info("Seek command executed successfully for userId: {} to {}ms", userId, positionMs);
+            return ResponseEntity.ok().build();
+        } catch (IOException e) {
+            logger.error("Failed to seek for userId: {}", userId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
     @GetMapping("/me/playlists")
     public ResponseEntity<SearchResultDto.PlaylistsDto> getMyPlaylists(
             @RequestParam String userId,

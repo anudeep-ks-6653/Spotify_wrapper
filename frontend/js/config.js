@@ -30,6 +30,7 @@ const CONFIG = {
             PLAY_TRACK: '/api/spotify/play-track',
             PLAY_PLAYLIST: '/api/spotify/play-playlist',
             TRANSFER: '/api/spotify/transfer',
+            SEEK: '/api/spotify/seek',
             MY_PLAYLISTS: '/api/spotify/me/playlists',
             LIKED_SONGS: '/api/spotify/me/tracks',
             RECENTLY_PLAYED: '/api/spotify/me/recently-played'
@@ -45,7 +46,7 @@ const CONFIG = {
     // Player configuration
     PLAYER: {
         UPDATE_INTERVAL: 10000, // 10 seconds
-        VOLUME_STEP: 10
+        VOLUME_STEP: 2
     },
     
     // Device refresh interval
