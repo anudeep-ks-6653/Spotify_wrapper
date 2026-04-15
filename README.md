@@ -6,7 +6,7 @@ A full-stack web application that wraps the Spotify Web API, allowing users to s
 
 - 🎵 **Search**: Search for songs, artists, albums, and playlists
 - 📚 **Library**: View your playlists, liked songs, and recently played tracks
-- 🎮 **Playback Control**: Play, pause, skip tracks, seek with clickable progress bar (with hover tooltip), and +/- 5/10/15s buttons on any connected device
+- 🎮 **Playback Control**: Play, pause, skip tracks, seek with clickable progress bar, +/- 5/10/15s buttons, volume step up/down, and hover tooltips on any connected device
 - 📱 **Device Management**: View and switch between available Spotify devices
 - 🔐 **OAuth Integration**: Secure authentication with Spotify
 - 💾 **Database Storage**: Persistent user data and token management

@@ -191,9 +191,11 @@ spotify/
 - Seek to position (clickable progress bar with hover tooltip)
 - +/- 5, 10, 15 second seek buttons
 - Current time and duration labels
-- Volume control
-- Track progress display (updates every 5 seconds)
+- Volume control with step up/down buttons and hover tooltip
+- Shared `#player-tooltip` for seek and volume (fixed position, follows cursor)
+- Track progress display (updates every 10 seconds)
 - Now playing info
+- Duplicate call prevention (`isUpdating` guard)
 
 ### `spotify.js`
 - API wrapper for backend calls
@@ -282,7 +284,26 @@ const Config = {
 - Hand cursor now only appears on actual clickable `<button>` elements
 
 #### Player Update Interval
-- Changed player seeker update interval from 10 seconds to 5 seconds in `config.js`
+- Player seeker update interval set to 10 seconds in `config.js`
+
+#### Volume Step Up/Down Buttons
+- Added volume down (`-`) and volume up (`+`) buttons flanking the volume slider
+- Each click adjusts by `CONFIG.PLAYER.VOLUME_STEP` (2%)
+- Reuses existing debounced `handleVolumeChange()` flow
+
+#### Common Tooltip Refactor
+- Replaced separate `#seek-tooltip` and `#volume-tooltip` with a single shared `#player-tooltip`
+- Uses `position: fixed` with `pageX`/`pageY` so it works consistently for both controls
+- Volume tooltip shows value at cursor position (not current slider value)
+
+#### Fixed Duplicate Player Update Calls
+- **Problem:** Switching tabs triggered duplicate `updateCurrentTrack()` API calls
+- **Cause:** `init()` called both `startUpdateLoop()` and `updateCurrentTrack()` separately; `refresh()` and seek handlers added extra calls outside the loop
+- **Solution:**
+  - Removed standalone `updateCurrentTrack()` from `init()`
+  - Added `isUpdating` guard to prevent concurrent calls
+  - `refresh()` now restarts the loop via `startUpdateLoop()` instead of calling `updateCurrentTrack()` directly
+  - Seek handlers restart the loop instead of using `setTimeout`
 
 ### March 5, 2026
 

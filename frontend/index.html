@@ -248,7 +248,6 @@
                             <div class="d-flex align-items-center mb-3">
                                 <span id="track-current-time" class="text-muted small me-2">0:00</span>
                                 <div style="position: relative; flex-grow: 1;">
-                                    <div id="seek-tooltip" style="display:none; position:absolute; top:-24px; background:#191414; color:#fff; padding:2px 6px; border-radius:4px; font-size:12px; pointer-events:none; white-space:nowrap; transform:translateX(-50%);"></div>
                                     <div id="progress-container" class="progress" style="cursor: pointer; height: 8px;">
                                         <div id="track-progress" class="progress-bar bg-success" role="progressbar"></div>
                                     </div>
@@ -286,7 +285,9 @@
                         <button id="volume-down-btn" class="btn btn-outline-secondary btn-sm me-2">
                             <i class="fas fa-volume-down"></i>
                         </button>
-                        <input type="range" class="form-range" id="volume-slider" min="0" max="100" value="50" style="max-width: 200px;">
+                        <div id="volume-wrapper" style="position: relative; max-width: 200px; flex-grow: 1;">
+                            <input type="range" class="form-range" id="volume-slider" min="0" max="100" value="50">
+                        </div>
                         <button id="volume-up-btn" class="btn btn-outline-secondary btn-sm ms-2">
                             <i class="fas fa-volume-up"></i>
                         </button>
@@ -300,6 +301,9 @@
            
         </div>
     </div>
+    <!-- Common Tooltip -->
+    <div id="player-tooltip" style="display:none; position:fixed; background:#191414; color:#fff; padding:2px 6px; border-radius:4px; font-size:12px; pointer-events:none; white-space:nowrap; z-index:1000;"></div>
+
     <!-- Handlebars Templates -->
     
     <!-- Track Result Template -->

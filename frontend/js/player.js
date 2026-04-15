@@ -21,9 +21,11 @@ const PlayerModule = {
         $('#next-btn').on('click', this.handleNext.bind(this));
         $('#prev-btn').on('click', this.handlePrevious.bind(this));
         $('#volume-slider').on('input', this.handleVolumeChange.bind(this));
+        $('#volume-slider').on('input mousemove', this.handleVolumeTooltip.bind(this));
+        $('#volume-slider').on('mouseleave', () => $('#player-tooltip').hide());
         $('#progress-container').on('click', this.handleSeek.bind(this));
         $('#progress-container').on('mousemove', this.handleSeekTooltip.bind(this));
-        $('#progress-container').on('mouseleave', () => $('#seek-tooltip').hide());
+        $('#progress-container').on('mouseleave', () => $('#player-tooltip').hide());
         $('.seek-btn').on('click', this.handleSeekBySeconds.bind(this));
         $('#volume-up-btn').on('click', () => {
             const val = Math.min(100, parseInt($('#volume-slider').val()) + CONFIG.PLAYER.VOLUME_STEP);
@@ -267,7 +269,7 @@ const PlayerModule = {
     // Show tooltip with time at mouse position on progress bar
     handleSeekTooltip(event) {
         if (!this.currentTrack || !this.currentDurationMs) {
-            $('#seek-tooltip').hide();
+            $('#player-tooltip').hide();
             return;
         }
         const $bar = $('#progress-container');
@@ -275,8 +277,16 @@ const PlayerModule = {
         const barWidth = $bar.width();
         const percent = Math.max(0, Math.min(1, offsetX / barWidth));
         const positionMs = Math.round(percent * this.currentDurationMs);
-        const $tooltip = $('#seek-tooltip');
-        $tooltip.text(this.formatTime(positionMs)).css('left', offsetX + 'px').show();
+        $('#player-tooltip').text(this.formatTime(positionMs)).css({ left: event.pageX + 'px', top: (event.pageY - 30) + 'px' }).show();
+    },
+
+    // Show tooltip with volume percentage at cursor position
+    handleVolumeTooltip(event) {
+        const $wrapper = $('#volume-wrapper');
+        const offsetX = event.pageX - $wrapper.offset().left;
+        const wrapperWidth = $wrapper.width();
+        const percent = Math.max(0, Math.min(100, Math.round((offsetX / wrapperWidth) * 100)));
+        $('#player-tooltip').text(percent + '%').css({ left: event.pageX + 'px', top: (event.pageY - 30) + 'px' }).show();
     },
 
     // Handle seek by +/- seconds button click
