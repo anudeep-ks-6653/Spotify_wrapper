@@ -1,6 +1,6 @@
 # Spotify Wrapper - Project Context
 
-> **Last Updated:** March 5, 2026
+> **Last Updated:** April 15, 2026
 
 This document provides a comprehensive overview of the Spotify Wrapper project, including architecture, recent changes, and development notes.
 
@@ -154,6 +154,7 @@ spotify/
 | POST | `/previous` | `userId`, `deviceId?` | Go to previous track |
 | POST | `/transfer` | `userId`, `deviceId` | Transfer playback to device |
 | POST | `/volume` | `userId`, `volumePercent`, `deviceId?` | Set volume (0-100) |
+| PUT | `/seek` | `userId`, `positionMs`, `deviceId?` | Seek to position in current track |
 
 ---
 
@@ -175,9 +176,9 @@ spotify/
 - Type filtering (track, artist, album, playlist)
 
 ### `library.js`
-- **My Playlists:** Paginated playlist view
+- **Recently Played:** Recent tracks with relative timestamps (default sub-tab)
 - **Liked Songs:** Paginated liked songs view
-- **Recently Played:** Recent tracks with relative timestamps
+- **My Playlists:** Paginated playlist view
 - Lazy loading (loads content only when tab is activated)
 
 ### `devices.js`
@@ -187,8 +188,11 @@ spotify/
 
 ### `player.js`
 - Playback controls (play, pause, next, previous)
+- Seek to position (clickable progress bar with hover tooltip)
+- +/- 5, 10, 15 second seek buttons
+- Current time and duration labels
 - Volume control
-- Track progress display
+- Track progress display (updates every 5 seconds)
 - Now playing info
 
 ### `spotify.js`
@@ -243,6 +247,42 @@ const Config = {
 ---
 
 ## 📝 Recent Changes
+
+### April 15, 2026
+
+#### Seek Playback Feature
+- **Backend:**
+  - Added `seek()` method to `SpotifyService` — calls `PUT /me/player/seek?position_ms={ms}` on Spotify API
+  - Added `PUT /api/spotify/seek` endpoint to `SpotifyController`
+- **Frontend:**
+  - Added `SEEK` endpoint to `config.js`
+  - Added `SpotifyAPI.seek()` method to `spotify.js`
+  - Made progress bar clickable to seek to any position
+  - Added current time and duration labels alongside progress bar
+  - Added hover tooltip on progress bar showing time at mouse position
+  - Added `handleSeek()`, `handleSeekTooltip()`, and `formatTime()` to `PlayerModule`
+
+#### Added +/- Seek Buttons
+- Added buttons for -15s, -10s, -5s (left) and +5s, +10s, +15s (right) around playback controls
+- Added `handleSeekBySeconds()` handler in `PlayerModule`
+
+#### UI Reordering
+- **Sidebar:** Reordered to Player (default) → Search → Library → Devices
+- **Library sub-tabs:** Reordered to Recently Played (default) → Liked Songs → My Playlists
+- Updated `app.js` default tab from `'search'` to `'player'`
+- Updated tab content visibility classes to match new defaults
+
+#### Bug Fix: Recently Played Stuck on Initial Load
+- **Problem:** After reordering Library sub-tabs, Recently Played (now the default) never loaded on first visit
+- **Cause:** `onTabActivated()` in `library.js` always loaded playlists (old default) and never triggered `loadRecentlyPlayed()` since Bootstrap `shown.bs.tab` doesn't fire for the already-active tab
+- **Solution:** Updated `onTabActivated()` to check which sub-tab is actually active and load the correct content
+
+#### CSS: Cursor Pointer Cleanup
+- Removed `cursor: pointer` from `.search-result-card` and `.device-card`
+- Hand cursor now only appears on actual clickable `<button>` elements
+
+#### Player Update Interval
+- Changed player seeker update interval from 10 seconds to 5 seconds in `config.js`
 
 ### March 5, 2026
 
