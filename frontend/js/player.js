@@ -25,6 +25,14 @@ const PlayerModule = {
         $('#progress-container').on('mousemove', this.handleSeekTooltip.bind(this));
         $('#progress-container').on('mouseleave', () => $('#seek-tooltip').hide());
         $('.seek-btn').on('click', this.handleSeekBySeconds.bind(this));
+        $('#volume-up-btn').on('click', () => {
+            const val = Math.min(100, parseInt($('#volume-slider').val()) + CONFIG.PLAYER.VOLUME_STEP);
+            $('#volume-slider').val(val).trigger('input');
+        });
+        $('#volume-down-btn').on('click', () => {
+            const val = Math.max(0, parseInt($('#volume-slider').val()) - CONFIG.PLAYER.VOLUME_STEP);
+            $('#volume-slider').val(val).trigger('input');
+        });
         
         // Stop event propagation on slider to prevent issues
         $('#volume-slider').on('mousedown touchstart', (e) => {
