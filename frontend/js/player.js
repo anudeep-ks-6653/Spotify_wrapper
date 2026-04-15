@@ -282,6 +282,10 @@ const PlayerModule = {
 
     // Show tooltip with volume percentage at cursor position
     handleVolumeTooltip(event) {
+        if (!event.pageX || !event.pageY) {
+            $('#player-tooltip').hide();
+            return;
+        }
         const $wrapper = $('#volume-wrapper');
         const offsetX = event.pageX - $wrapper.offset().left;
         const wrapperWidth = $wrapper.width();
