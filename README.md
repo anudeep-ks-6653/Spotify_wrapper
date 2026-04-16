@@ -129,7 +129,8 @@ Use the startup script to run both backend and frontend:
 2. **Player** (Default Tab): Control playback with play/pause, next, and previous buttons. Seek using:
    - Clickable progress bar (shows time on hover)
    - Arrow buttons for ±5/10/15 second jumps
-   - Keyboard arrows (Left/Right) for ±5 second increments
+   - Keyboard: **Shift + Left/Right** for ±5 second increments (from anywhere in Player tab)
+   - Keyboard (when progress bar is focused): Left/Right for ±5 second increments
    - Volume: Adjust with +/- buttons or slider (shows volume % on hover)
 3. **Search**: Use the search tab to find songs, artists, albums, and playlists
 4. **Library**: Browse recently played tracks, liked songs, and your playlists (Recently Played is the default sub-tab)
@@ -137,7 +138,10 @@ Use the startup script to run both backend and frontend:
 
 ### Keyboard Navigation
 - **Tab** to navigate between interactive elements
-- **Arrow keys** to adjust seek position (Left/Right) or volume (via slider)
+- **Shift + Left/Right** to seek -5/+5 seconds in Player tab
+- **Ctrl/Cmd + Left/Right** for previous/next track
+- **Ctrl/Cmd + Up/Down** to adjust volume step
+- **Arrow keys** to adjust seek/volume when the relevant slider control is focused
 - **Enter/Space** to activate buttons
 
 ## API Endpoints

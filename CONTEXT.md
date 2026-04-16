@@ -250,6 +250,18 @@ const Config = {
 
 ## 📝 Recent Changes
 
+### April 16, 2026
+
+#### Keyboard Shortcut Enhancement: Shift + Arrow Seek
+- Added global keyboard seek shortcuts in `player.js` for the active Player tab:
+  - `Shift + ArrowRight` seeks forward by 5 seconds
+  - `Shift + ArrowLeft` seeks backward by 5 seconds
+- This behavior works even when the progress bar is not focused, improving keyboard accessibility and usability.
+- Existing keyboard behavior remains unchanged:
+  - `Ctrl/Cmd + ArrowRight` for next track
+  - `Ctrl/Cmd + ArrowLeft` for previous track
+  - Focused progress bar `ArrowRight/ArrowLeft` for ±5 second seek
+
 ### April 15, 2026 (Afternoon Update)
 
 #### WCAG Level A Accessibility Compliance

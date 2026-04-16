@@ -297,6 +297,26 @@ const PlayerModule = {
         $('#player-tooltip').text(percent + '%').css({ left: event.pageX + 'px', top: (event.pageY - 30) + 'px' }).show();
     },
 
+    // Seek current track by the provided offset in milliseconds.
+    async seekByOffsetMs(offsetMs) {
+        if (!this.currentTrack || !this.currentDurationMs) return;
+
+        const currentMs = this.currentProgressMs || 0;
+        const positionMs = Math.max(0, Math.min(currentMs + offsetMs, this.currentDurationMs));
+        const percent = (positionMs / this.currentDurationMs) * 100;
+
+        $('#track-progress').css('width', `${percent}%`);
+        $('#progress-container').attr('aria-valuenow', Math.round(percent));
+        $('#track-current-time').text(this.formatTime(positionMs));
+
+        try {
+            await SpotifyAPI.seek(positionMs, this.deviceId);
+            this.startUpdateLoop();
+        } catch (error) {
+            console.error('Failed to seek:', error);    
+        }
+    },
+
     // Handle keyboard seek on progress bar (Left/Right arrows)
     async handleSeekKeyboard(event) {
         if (!this.currentTrack || !this.currentDurationMs) return;
@@ -310,21 +330,8 @@ const PlayerModule = {
             return;
         }
         event.preventDefault();
-        
-        const currentMs = this.currentProgressMs || 0;
-        const positionMs = Math.max(0, Math.min(currentMs + offsetMs, this.currentDurationMs));
-        const percent = (positionMs / this.currentDurationMs) * 100;
-        
-        $('#track-progress').css('width', `${percent}%`);
-        $('#progress-container').attr('aria-valuenow', Math.round(percent));
-        $('#track-current-time').text(this.formatTime(positionMs));
-        
-        try {
-            await SpotifyAPI.seek(positionMs, this.deviceId);
-            this.startUpdateLoop();
-        } catch (error) {
-            console.error('Failed to seek:', error);
-        }
+
+        await this.seekByOffsetMs(offsetMs);
     },
 
     // Handle seek by +/- seconds button click
@@ -407,13 +414,19 @@ const PlayerModule = {
                 this.handlePlayPause();
                 break;
             case 'ArrowRight':
-                if (event.ctrlKey || event.metaKey) {
+                if (event.shiftKey) {
+                    event.preventDefault();
+                    this.seekByOffsetMs(5000);
+                } else if (event.ctrlKey || event.metaKey) {
                     event.preventDefault();
                     this.handleNext();
                 }
                 break;
             case 'ArrowLeft':
-                if (event.ctrlKey || event.metaKey) {
+                if (event.shiftKey) {
+                    event.preventDefault();
+                    this.seekByOffsetMs(-5000);
+                } else if (event.ctrlKey || event.metaKey) {
                     event.preventDefault();
                     this.handlePrevious();
                 }
