@@ -450,6 +450,19 @@
             </div>
         </div>
     </script>
+
+    <!-- Queue Item Template -->
+    <script id="queue-item-template" type="text/x-handlebars-template">
+        <div class="list-group-item">
+            <div class="d-flex align-items-center gap-3">
+                <img src="{{imageUrl}}" alt="{{name}} cover" width="40" height="40" class="rounded" style="object-fit: cover;">
+                <div class="flex-grow-1">
+                    <div class="fw-semibold">{{index}}. {{name}}</div>
+                    <div class="small text-muted">{{{artistLinks}}}</div>
+                </div>
+            </div>
+        </div>
+    </script>
     
     <!-- Library Playlist Template -->
     <script id="library-playlist-template" type="text/x-handlebars-template">

@@ -1,5 +1,6 @@
 // Player module for controlling Spotify playback
 const PlayerModule = {
+    templates: {},
     currentTrack: null,
     isPlaying: false,
     updateTimeout: null,
@@ -11,9 +12,17 @@ const PlayerModule = {
 
     // Initialize player module
     init() {
+        this.compileTemplates();
         this.bindEvents();
         this.initKeyboardShortcuts();
         this.startUpdateLoop();
+    },
+
+    compileTemplates() {
+        const queueItemTemplate = document.getElementById('queue-item-template');
+        if (queueItemTemplate) {
+            this.templates.queueItem = Handlebars.compile(queueItemTemplate.innerHTML);
+        }
     },
     
     // Bind player control events
@@ -174,14 +183,18 @@ const PlayerModule = {
         }
 
         const html = queue.slice(0, 10).map((track, index) => {
-            const name = Utils.escapeHtml(track?.name || 'Unknown Track');
-            const artistLinks = Utils.formatArtistLinks(track?.artists || []);
-            return `
-                <div class="list-group-item">
-                    <div class="fw-semibold">${index + 1}. ${name}</div>
-                    <div class="small text-muted">${artistLinks}</div>
-                </div>
-            `;
+            const templateData = {
+                index: index + 1,
+                name: track?.name || 'Unknown Track',
+                artistLinks: Utils.formatArtistLinks(track?.artists || []),
+                imageUrl: Utils.getImageUrl(track?.album?.images, 64)
+            };
+
+            if (this.templates.queueItem) {
+                return this.templates.queueItem(templateData);
+            }
+
+            return '';
         }).join('');
 
         $queueList.html(html);
