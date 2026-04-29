@@ -279,8 +279,10 @@ const SearchModule = {
         const $btn = $(e.currentTarget);
         const uri = $btn.data('uri');
         const name = $btn.data('name');
+        const type = $btn.data('type') || 'track';
+        const id = $btn.data('id');
 
-        if (!uri) {
+        if (!uri && !id) {
             return;
         }
 
@@ -288,7 +290,7 @@ const SearchModule = {
 
         try {
             const deviceId = window.PlayerModule?.deviceId || null;
-            await SpotifyAPI.addToQueue(uri, deviceId);
+            await SpotifyAPI.addToQueue({ uri, id, type }, deviceId);
             Utils.showSuccess(`Added to queue: ${name}`);
             if (window.PlayerModule) {
                 PlayerModule.updateQueue();

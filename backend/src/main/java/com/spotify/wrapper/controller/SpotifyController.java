@@ -236,12 +236,20 @@ public class SpotifyController {
     @PostMapping("/queue/add")
     public ResponseEntity<Void> addToQueue(
             @RequestParam String userId,
-            @RequestParam String uri,
+            @RequestParam(required = false) String uri,
+            @RequestParam(required = false) String id,
+            @RequestParam(required = false) String type,
             @RequestParam(required = false) String deviceId) {
-        logger.info("Add to queue request - userId: {}, uri: {}, deviceId: {}", userId, uri, deviceId);
+        logger.info("Add to queue request - userId: {}, uri: {}, id: {}, type: {}, deviceId: {}", userId, uri, id, type, deviceId);
+
+        boolean hasUri = uri != null && !uri.isBlank();
+        boolean hasIdType = id != null && !id.isBlank() && type != null && !type.isBlank();
+        if (!hasUri && !hasIdType) {
+            return ResponseEntity.badRequest().build();
+        }
 
         try {
-            spotifyService.addToQueue(userId, uri, deviceId);
+            spotifyService.addToQueue(userId, uri, id, type, deviceId);
             logger.info("Add to queue command executed successfully for userId: {}", userId);
             return ResponseEntity.ok().build();
         } catch (IOException e) {
@@ -300,6 +308,25 @@ public class SpotifyController {
             return ResponseEntity.ok(recentlyPlayed);
         } catch (IOException e) {
             logger.error("Failed to get recently played for userId: {}", userId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/albums/tracks")
+    public ResponseEntity<SearchResultDto.TracksDto> getAlbumTracks(
+            @RequestParam String userId,
+            @RequestParam String albumId,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        logger.info("Get album tracks request - userId: {}, albumId: {}, limit: {}, offset: {}", userId, albumId, limit, offset);
+
+        try {
+            SearchResultDto.TracksDto tracks = spotifyService.getAlbumTracks(userId, albumId, limit, offset);
+            logger.info("Album tracks retrieved successfully for userId: {}, albumId: {}, found {} tracks",
+                    userId, albumId, tracks.getItems() != null ? tracks.getItems().size() : 0);
+            return ResponseEntity.ok(tracks);
+        } catch (IOException e) {
+            logger.error("Failed to get album tracks for userId: {}, albumId: {}", userId, albumId, e);
             return ResponseEntity.internalServerError().build();
         }
     }

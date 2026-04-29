@@ -247,6 +247,18 @@ const SpotifyAPI = {
         return await this.makeRequest(`${CONFIG.ENDPOINTS.SPOTIFY.RECENTLY_PLAYED}?${params}`);
     },
 
+    // Get tracks for an album
+    async getAlbumTracks(albumId, limit = 20, offset = 0) {
+        const params = new URLSearchParams({
+            userId: this.userId,
+            albumId: albumId,
+            limit: limit.toString(),
+            offset: offset.toString()
+        });
+
+        return await this.makeRequest(`${CONFIG.ENDPOINTS.SPOTIFY.ALBUM_TRACKS}?${params}`);
+    },
+
     // Get current queue
     async getQueue() {
         const params = new URLSearchParams({
@@ -256,12 +268,25 @@ const SpotifyAPI = {
         return await this.makeRequest(`${CONFIG.ENDPOINTS.SPOTIFY.QUEUE}?${params}`);
     },
 
-    // Add track/episode URI to queue
-    async addToQueue(uri, deviceId = null) {
+    // Add to queue using URI or id/type payload
+    async addToQueue(queueInput, deviceId = null) {
         const params = new URLSearchParams({
-            userId: this.userId,
-            uri: uri
+            userId: this.userId
         });
+
+        if (typeof queueInput === 'string') {
+            params.append('uri', queueInput);
+        } else if (queueInput && typeof queueInput === 'object') {
+            if (queueInput.uri) {
+                params.append('uri', queueInput.uri);
+            }
+            if (queueInput.id) {
+                params.append('id', queueInput.id);
+            }
+            if (queueInput.type) {
+                params.append('type', queueInput.type);
+            }
+        }
 
         if (deviceId) {
             params.append('deviceId', deviceId);

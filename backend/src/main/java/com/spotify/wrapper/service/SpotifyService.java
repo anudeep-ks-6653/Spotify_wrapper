@@ -1,6 +1,7 @@
 package com.spotify.wrapper.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.spotify.wrapper.dto.DevicesDto;
 import com.spotify.wrapper.dto.PlaybackDto;
 import com.spotify.wrapper.dto.QueueDto;
@@ -543,6 +544,44 @@ public class SpotifyService {
 
         String accessToken = tokenService.getAccessToken(userId);
 
+        addUriToQueue(accessToken, uri, deviceId);
+
+        long endTime = System.currentTimeMillis();
+        logger.info("=== ADD TO QUEUE METHOD COMPLETED in {}ms ===", endTime - startTime);
+    }
+
+    public void addToQueue(String userId, String uri, String id, String type, String deviceId) throws IOException {
+        long startTime = System.currentTimeMillis();
+        logger.debug("=== ADD TO QUEUE (URI/ID-TYPE) METHOD CALLED ===");
+        logger.debug("userId: {}, uri: {}, id: {}, type: {}, deviceId: {}", userId, uri, id, type, deviceId);
+
+        String accessToken = tokenService.getAccessToken(userId);
+
+        if (uri != null && !uri.isBlank()) {
+            addUriToQueue(accessToken, uri, deviceId);
+            long endTime = System.currentTimeMillis();
+            logger.info("=== ADD TO QUEUE (URI/ID-TYPE) METHOD COMPLETED in {}ms ===", endTime - startTime);
+            return;
+        }
+
+        List<String> uris = resolveQueueUrisByIdType(accessToken, id, type);
+        if (uris.isEmpty()) {
+            throw new IOException("No queueable tracks found for id=" + id + ", type=" + type);
+        }
+
+        for (String queueUri : uris) {
+            addUriToQueue(accessToken, queueUri, deviceId);
+        }
+
+        long endTime = System.currentTimeMillis();
+        logger.info("=== ADD TO QUEUE (URI/ID-TYPE) METHOD COMPLETED in {}ms; queued {} item(s) ===", endTime - startTime, uris.size());
+    }
+
+    private void addUriToQueue(String accessToken, String uri, String deviceId) throws IOException {
+        if (uri == null || uri.isBlank()) {
+            throw new IOException("Queue URI is required");
+        }
+
         String encodedUri = URLEncoder.encode(uri, StandardCharsets.UTF_8);
         StringBuilder urlBuilder = new StringBuilder(SPOTIFY_API_BASE_URL)
                 .append("/me/player/queue?uri=")
@@ -569,9 +608,105 @@ public class SpotifyService {
             }
 
             EntityUtils.consume(response.getEntity());
+        }
+    }
 
-            long endTime = System.currentTimeMillis();
-            logger.info("=== ADD TO QUEUE METHOD COMPLETED in {}ms (API: {}ms) ===", endTime - startTime, apiEndTime - apiStartTime);
+    private List<String> resolveQueueUrisByIdType(String accessToken, String id, String type) throws IOException {
+        if (id == null || id.isBlank() || type == null || type.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        String normalizedType = type.trim().toLowerCase(Locale.ROOT);
+        String encodedId = URLEncoder.encode(id.trim(), StandardCharsets.UTF_8);
+
+        if ("track".equals(normalizedType)) {
+            return Collections.singletonList("spotify:track:" + id.trim());
+        }
+
+        if ("album".equals(normalizedType)) {
+            return fetchAlbumTrackUris(accessToken, encodedId);
+        }
+
+        if ("playlist".equals(normalizedType)) {
+            return fetchPlaylistTrackUris(accessToken, encodedId);
+        }
+
+        return Collections.emptyList();
+    }
+
+    private List<String> fetchAlbumTrackUris(String accessToken, String encodedAlbumId) throws IOException {
+        List<String> uris = new ArrayList<>();
+        int offset = 0;
+        int limit = 50;
+
+        while (true) {
+            String url = SPOTIFY_API_BASE_URL + "/albums/" + encodedAlbumId + "/tracks?limit=" + limit + "&offset=" + offset;
+            JsonNode root = getJson(accessToken, url);
+            JsonNode items = root.path("items");
+
+            if (items.isArray()) {
+                for (JsonNode item : items) {
+                    String uri = item.path("uri").asText("");
+                    if (!uri.isBlank()) {
+                        uris.add(uri);
+                    }
+                }
+            }
+
+            String next = root.path("next").asText("");
+            if (next.isBlank()) {
+                break;
+            }
+            offset += limit;
+        }
+
+        return uris;
+    }
+
+    private List<String> fetchPlaylistTrackUris(String accessToken, String encodedPlaylistId) throws IOException {
+        List<String> uris = new ArrayList<>();
+        int offset = 0;
+        int limit = 50;
+
+        while (true) {
+            String url = SPOTIFY_API_BASE_URL + "/playlists/" + encodedPlaylistId + "/tracks?limit=" + limit + "&offset=" + offset;
+            JsonNode root = getJson(accessToken, url);
+            JsonNode items = root.path("items");
+
+            if (items.isArray()) {
+                for (JsonNode item : items) {
+                    JsonNode track = item.path("track");
+                    String uri = track.path("uri").asText("");
+                    if (!uri.isBlank()) {
+                        uris.add(uri);
+                    }
+                }
+            }
+
+            String next = root.path("next").asText("");
+            if (next.isBlank()) {
+                break;
+            }
+            offset += limit;
+        }
+
+        return uris;
+    }
+
+    private JsonNode getJson(String accessToken, String url) throws IOException {
+        HttpGet request = new HttpGet(url);
+        request.setHeader("Authorization", "Bearer " + accessToken);
+
+        try (CloseableHttpResponse response = httpClient.execute(request)) {
+            int statusCode = response.getStatusLine().getStatusCode();
+            String responseBody = EntityUtils.toString(response.getEntity());
+            EntityUtils.consume(response.getEntity());
+
+            if (statusCode >= 400) {
+                throw new IOException("Spotify API error: " + responseBody);
+            }
+
+            return objectMapper.readTree(responseBody);
         }
     }
     
@@ -701,6 +836,45 @@ public class SpotifyService {
             
             long endTime = System.currentTimeMillis();
             logger.info("=== GET RECENTLY PLAYED METHOD COMPLETED in {}ms (API: {}ms) ===", endTime - startTime, apiEndTime - apiStartTime);
+            return result;
+        }
+    }
+
+    public SearchResultDto.TracksDto getAlbumTracks(String userId, String albumId, int limit, int offset) throws IOException {
+        long startTime = System.currentTimeMillis();
+        logger.debug("=== GET ALBUM TRACKS METHOD CALLED ===");
+        logger.debug("userId: {}, albumId: {}, limit: {}, offset: {}", userId, albumId, limit, offset);
+
+        String accessToken = tokenService.getAccessToken(userId);
+        int sanitizedLimit = Math.max(1, Math.min(limit, 50));
+        int sanitizedOffset = Math.max(0, offset);
+
+        String encodedAlbumId = URLEncoder.encode(albumId, StandardCharsets.UTF_8);
+        String url = SPOTIFY_API_BASE_URL + "/albums/" + encodedAlbumId + "/tracks?limit=" + sanitizedLimit + "&offset=" + sanitizedOffset;
+        logger.debug("Request URL: {}", url);
+
+        HttpGet request = new HttpGet(url);
+        request.setHeader("Authorization", "Bearer " + accessToken);
+
+        long apiStartTime = System.currentTimeMillis();
+        try (CloseableHttpResponse response = httpClient.execute(request)) {
+            long apiEndTime = System.currentTimeMillis();
+            logger.info("Spotify API /albums/{id}/tracks took {}ms", apiEndTime - apiStartTime);
+
+            String responseBody = EntityUtils.toString(response.getEntity());
+            EntityUtils.consume(response.getEntity());
+
+            SearchResultDto.TracksDto result = objectMapper.readValue(responseBody, SearchResultDto.TracksDto.class);
+            if (result.getItems() != null) {
+                result.setItems(
+                        result.getItems().stream()
+                                .filter(Objects::nonNull)
+                                .collect(java.util.stream.Collectors.toList())
+                );
+            }
+
+            long endTime = System.currentTimeMillis();
+            logger.info("=== GET ALBUM TRACKS METHOD COMPLETED in {}ms (API: {}ms) ===", endTime - startTime, apiEndTime - apiStartTime);
             return result;
         }
     }

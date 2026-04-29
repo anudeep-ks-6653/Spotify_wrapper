@@ -1,6 +1,6 @@
 # Spotify Wrapper - Project Context
 
-> **Last Updated:** April 28, 2026
+> **Last Updated:** April 29, 2026
 
 This document provides a comprehensive overview of the Spotify Wrapper project, including architecture, recent changes, and development notes.
 
@@ -137,6 +137,7 @@ spotify/
 | GET | `/me/playlists` | `userId`, `limit`, `offset` | Get user's playlists |
 | GET | `/me/tracks` | `userId`, `limit`, `offset` | Get user's liked songs |
 | GET | `/me/recently-played` | `userId`, `limit` | Get recently played tracks |
+| GET | `/albums/tracks` | `userId`, `albumId`, `limit`, `offset` | Get tracks for a specific album |
 
 #### Devices
 | Method | Endpoint | Parameters | Description |
@@ -154,7 +155,7 @@ spotify/
 | POST | `/pause` | `userId`, `deviceId?` | Pause playback |
 | POST | `/next` | `userId`, `deviceId?` | Skip to next track |
 | POST | `/previous` | `userId`, `deviceId?` | Go to previous track |
-| POST | `/queue/add` | `userId`, `uri`, `deviceId?` | Add item to queue |
+| POST | `/queue/add` | `userId`, (`uri` OR `id`+`type`), `deviceId?` | Add item(s) to queue; supports backend expansion for track/album/playlist |
 | POST | `/transfer` | `userId`, `deviceId` | Transfer playback to device |
 | POST | `/volume` | `userId`, `volumePercent`, `deviceId?` | Set volume (0-100) |
 | PUT | `/seek` | `userId`, `positionMs`, `deviceId?` | Seek to position in current track |
@@ -178,7 +179,8 @@ spotify/
 - Results rendering with Handlebars templates
 - Type filtering (track, artist, album, playlist)
 - Supports `All` mode (track + album + playlist grouped sections)
-- Add-to-queue actions for track results
+- Add-to-queue actions for track and album results
+- Uses backend queue contract (`id` + `type`) instead of frontend-only expansion loops
 
 ### `library.js`
 - **Recently Played:** Recent tracks with relative timestamps (default sub-tab)
@@ -256,6 +258,20 @@ const Config = {
 ---
 
 ## 📝 Recent Changes
+
+### April 29, 2026
+
+#### Queue API Contract Upgrade (id/type)
+- Updated `POST /api/spotify/queue/add` to accept either:
+  - `uri` (backward compatible), or
+  - `id` + `type` (`track`, `album`, `playlist`)
+- Backend now resolves `id` + `type` into queueable track URIs and adds them in a loop server-side
+- Added backend helpers to fetch album/playlist tracks with pagination and queue all resolved URIs
+
+#### Album Queueing Update
+- Added `GET /api/spotify/albums/tracks` endpoint for album track retrieval
+- Search album cards now use **Add to Queue** with `id` + `type=album`
+- Removed frontend album queue loops in favor of backend centralized expansion
 
 ### April 28, 2026
 

@@ -8,6 +8,7 @@ A full-stack web application that wraps the Spotify Web API, allowing users to s
 - 📚 **Library**: View your playlists, liked songs, and recently played tracks
 - 🎮 **Playback Control**: Play, pause, skip tracks, seek with clickable progress bar, +/- 5/10/15s buttons, volume step up/down, and hover tooltips on any connected device
 - 🧾 **Queue Management**: Add tracks to queue from Search/Library and view current queue in Player tab
+- 🔁 **Bulk Queue Expansion**: Queue requests can accept `id` + `type` (track/album/playlist) and expand to track URIs on the backend
 - 📱 **Device Management**: View and switch between available Spotify devices
 - 🔐 **OAuth Integration**: Secure authentication with Spotify
 - 💾 **Database Storage**: Persistent user data and token management
@@ -136,6 +137,7 @@ Use the startup script to run both backend and frontend:
 3. **Search**: Use the search tab to find songs, artists, albums, and playlists. Select **All** to search songs, albums, and playlists together in grouped results.
    - Artist names are clickable and open the Spotify artist page
    - Use **Add to Queue** on tracks to queue without interrupting playback
+   - Album **Add to Queue** now queues album tracks via backend expansion
 4. **Library**: Browse recently played tracks, liked songs, and your playlists (Recently Played is the default sub-tab)
    - Liked Songs and Recently Played support **Add to Queue**
 5. **Devices**: View and select available Spotify devices
@@ -161,12 +163,13 @@ Use the startup script to run both backend and frontend:
 - `GET /api/spotify/devices` - Get available devices
 - `GET /api/spotify/playback` - Get current playback state
 - `GET /api/spotify/queue` - Get current playback queue
+- `GET /api/spotify/albums/tracks` - Get tracks for an album (`albumId`, `limit`, `offset`)
 - `POST /api/spotify/play` - Start playback
 - `POST /api/spotify/pause` - Pause playback
 - `POST /api/spotify/next` - Skip to next track
 - `POST /api/spotify/previous` - Skip to previous track
 - `POST /api/spotify/transfer` - Transfer playback to device
-- `POST /api/spotify/queue/add` - Add track/episode URI to queue
+- `POST /api/spotify/queue/add` - Add to queue using either `uri` OR `id` + `type` (`track`, `album`, `playlist`)
 - `PUT /api/spotify/seek` - Seek to position in current track
 
 ### Library
