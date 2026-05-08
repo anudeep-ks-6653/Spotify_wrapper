@@ -6,7 +6,7 @@ A full-stack web application that wraps the Spotify Web API, allowing users to s
 
 - 🎵 **Search**: Search for songs, artists, albums, and playlists
 - 📚 **Library**: View your playlists, liked songs, and recently played tracks
-- 🎮 **Playback Control**: Play, pause, skip tracks, seek with clickable progress bar, +/- 5/10/15s buttons, volume step up/down, and hover tooltips on any connected device
+- 🎮 **Playback Control**: Play, pause, skip tracks, seek with clickable progress bar, +/- 5/10/15s buttons, volume step up/down, and hover tooltips on any connected device. Progress bar updates smoothly every 100ms while playing, syncing with Spotify every 15 seconds
 - 🔇 **Smart Volume Availability**: Volume slider/buttons are automatically disabled when the current Spotify device does not support volume control
 - 🧾 **Queue Management**: Add tracks to queue from Search/Library and view current queue in Player tab
 - 🔁 **Bulk Queue Expansion**: Queue requests can accept `id` + `type` (track/album/playlist) and expand to track URIs on the backend
@@ -143,7 +143,7 @@ The script detects processes by port (9090 / 3000) and Spring Boot / Python serv
 
 1. **Login**: Click "Login with Spotify" to authenticate with your Spotify account
 2. **Player** (Default Tab): Control playback with play/pause, next, and previous buttons. Seek using:
-   - Clickable progress bar (shows time on hover)
+   - Clickable progress bar (shows time on hover; updates smoothly every 100ms between server syncs)
    - Arrow buttons for ±5/10/15 second jumps
    - Keyboard: **Shift + Left/Right** for ±5 second increments (from anywhere in Player tab)
    - Keyboard (when progress bar is focused): Left/Right for ±5 second increments

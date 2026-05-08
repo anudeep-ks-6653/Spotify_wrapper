@@ -90,6 +90,7 @@ Features:
 - Library: My Playlists, Liked Songs, Recently Played
 - Device management and playback control
 - Volume controls auto-disable on devices without volume support
+- Smooth progress animation: progress bar & time updates every 100ms (local), syncs with backend every 15s
 - 429 rate-limit error handling with user-friendly frontend message
 - Playback error mapping: 404 when no active device, with user-friendly frontend message
 - Playback polling every 15 seconds; queue polling every 30 seconds

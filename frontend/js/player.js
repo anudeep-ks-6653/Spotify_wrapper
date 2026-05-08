@@ -11,6 +11,9 @@ const PlayerModule = {
     keyboardShortcutsInitialized: false,
     volumeControlEnabled: true,
     lastQueueUpdateAt: 0,
+    progressAnimationInterval: null,
+    lastSyncProgressMs: 0,
+    lastSyncTime: 0,
 
     // Initialize player module
     init() {
@@ -162,12 +165,57 @@ const PlayerModule = {
         
         // Update page title
         document.title = `${track.name} - ${artists} | Spotify Wrapper`;
+        
+        // Start smooth progress animation if playing
+        this.lastSyncProgressMs = progressMs;
+        this.lastSyncTime = Date.now();
+        if (trackData.is_playing) {
+            this.startProgressAnimation();
+        } else {
+            this.stopProgressAnimation();
+        }
+    },
+    
+    // Start smooth progress animation loop
+    startProgressAnimation() {
+        this.stopProgressAnimation();
+        
+        this.progressAnimationInterval = setInterval(() => {
+            if (!this.isPlaying || !this.currentTrack || !this.currentDurationMs) {
+                this.stopProgressAnimation();
+                return;
+            }
+            
+            // Calculate current progress based on elapsed time since last sync
+            const elapsedMs = Date.now() - this.lastSyncTime;
+            const calculatedProgressMs = Math.min(
+                this.lastSyncProgressMs + elapsedMs,
+                this.currentDurationMs
+            );
+            
+            // Update UI with smooth progress
+            const progressPercent = (calculatedProgressMs / this.currentDurationMs) * 100;
+            $('#track-progress').css('width', `${progressPercent}%`);
+            $('#progress-container').attr('aria-valuenow', Math.round(progressPercent));
+            $('#track-current-time').text(this.formatTime(calculatedProgressMs));
+        }, 100); // Update every 100ms for smooth animation
+    },
+    
+    // Stop smooth progress animation loop
+    stopProgressAnimation() {
+        if (this.progressAnimationInterval) {
+            clearInterval(this.progressAnimationInterval);
+            this.progressAnimationInterval = null;
+        }
     },
     
     // Display no track playing message
     displayNoTrack() {
         $('#track-info').addClass('d-none');
         $('#no-track').removeClass('d-none');
+        
+        // Stop progress animation
+        this.stopProgressAnimation();
         
         // Reset page title
         document.title = 'Spotify Wrapper';
@@ -570,6 +618,7 @@ const PlayerModule = {
     // Cleanup when module is destroyed
     destroy() {
         this.stopUpdateLoop();
+        this.stopProgressAnimation();
         if (this.volumeTimeout) {
             clearTimeout(this.volumeTimeout);
         }
