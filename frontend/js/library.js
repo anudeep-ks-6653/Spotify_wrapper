@@ -572,7 +572,7 @@ const Library = {
             App.switchTab('player');
         } catch (error) {
             console.error('Error playing playlist:', error);
-            alert('Failed to play playlist. Make sure you have an active Spotify device.');
+            Utils.showError(error.message || 'Failed to play playlist. Make sure you have an active Spotify device.');
         } finally {
             $btn.prop('disabled', false).html('<i class="fas fa-play me-1"></i>Play');
         }
@@ -597,7 +597,7 @@ const Library = {
             App.switchTab('player');
         } catch (error) {
             console.error('Error playing track:', error);
-            alert('Failed to play track. Make sure you have an active Spotify device.');
+            Utils.showError(error.message || 'Failed to play track. Make sure you have an active Spotify device.');
         } finally {
             $btn.prop('disabled', false).html('<i class="fas fa-play me-1"></i>Play');
         }
@@ -621,7 +621,7 @@ const Library = {
             }
         } catch (error) {
             console.error('Error adding to queue:', error);
-            alert('Failed to add to queue. Make sure you have an active Spotify device.');
+            Utils.showError(error.message || 'Failed to add to queue. Make sure you have an active Spotify device.');
         } finally {
             $btn.prop('disabled', false).html('<i class="fas fa-list-ul me-1"></i>Add to Queue');
         }

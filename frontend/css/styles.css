@@ -203,6 +203,38 @@ body {
     color: #055160;
 }
 
+/* Global floating alerts (top center) */
+#global-error,
+#global-success {
+    z-index: 12000 !important;
+    width: min(92vw, 680px);
+}
+
+.global-floating-alert {
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(2px);
+}
+
+#global-error .global-floating-alert.alert-danger {
+    background-color: rgba(133, 20, 32, 0.96);
+    border-color: #f5a0ab;
+    color: #ffffff;
+}
+
+#global-success .global-floating-alert.alert-success {
+    background-color: rgba(19, 96, 53, 0.96);
+    border-color: #8de1b2;
+    color: #ffffff;
+}
+
+#global-error .global-floating-alert .btn-close,
+#global-success .global-floating-alert .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
 /* Tab content transitions */
 .tab-content {
     animation: fadeIn 0.3s ease-in-out;

@@ -277,7 +277,7 @@ const App = {
         }
         
         $errorContainer.html(`
-            <div class="alert alert-danger alert-dismissible fade show shadow" role="alert">
+            <div class="alert alert-danger alert-dismissible fade show shadow global-floating-alert" role="alert">
                 <i class="fas fa-exclamation-triangle me-2"></i>
                 ${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -299,7 +299,7 @@ const App = {
         }
         
         $successContainer.html(`
-            <div class="alert alert-success alert-dismissible fade show shadow" role="alert">
+            <div class="alert alert-success alert-dismissible fade show shadow global-floating-alert" role="alert">
                 <i class="fas fa-check-circle me-2"></i>
                 ${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>

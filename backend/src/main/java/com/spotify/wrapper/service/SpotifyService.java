@@ -6,6 +6,7 @@ import com.spotify.wrapper.dto.DevicesDto;
 import com.spotify.wrapper.dto.PlaybackDto;
 import com.spotify.wrapper.dto.QueueDto;
 import com.spotify.wrapper.dto.SearchResultDto;
+import com.spotify.wrapper.exception.SpotifyApiException;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -40,6 +41,29 @@ public class SpotifyService {
     
     @Autowired
     private TokenService tokenService;
+
+    private void throwSpotifyApiError(int statusCode, String responseBody) {
+        String message = extractSpotifyErrorMessage(responseBody);
+        throw new SpotifyApiException(statusCode, message, responseBody);
+    }
+
+    private String extractSpotifyErrorMessage(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) {
+            return "Spotify API error";
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode messageNode = root.path("error").path("message");
+            if (!messageNode.isMissingNode() && !messageNode.asText().isBlank()) {
+                return messageNode.asText();
+            }
+        } catch (Exception ignored) {
+            // Fallback to plain-text body when response is not JSON.
+        }
+
+        return responseBody;
+    }
     
     @PostConstruct
     public void init() {
@@ -97,9 +121,16 @@ public class SpotifyService {
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             long apiEndTime = System.currentTimeMillis();
             logger.info("Spotify API /search took {}ms", apiEndTime - apiStartTime);
+
+            int statusCode = response.getStatusLine().getStatusCode();
             
             String responseBody = EntityUtils.toString(response.getEntity());
             EntityUtils.consume(response.getEntity());
+
+            if (statusCode >= 400) {
+                logger.error("Search request failed with status {}: {}", statusCode, responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
+            }
             
             logger.info("Raw search response (first 2000 chars): {}", responseBody.length() > 2000 ? responseBody.substring(0, 2000) : responseBody);
             SearchResultDto result = objectMapper.readValue(responseBody, SearchResultDto.class);
@@ -146,8 +177,8 @@ public class SpotifyService {
             }
             
             if (result.getError() != null) {
-                throw new IOException("Spotify API error: " + result.getError().getMessage() + 
-                                   " (Status: " + result.getError().getStatus() + ")");
+                int errorStatus = result.getError().getStatus() > 0 ? result.getError().getStatus() : 400;
+                throw new SpotifyApiException(errorStatus, result.getError().getMessage(), responseBody);
             }
             
             long endTime = System.currentTimeMillis();
@@ -173,9 +204,16 @@ public class SpotifyService {
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             long apiEndTime = System.currentTimeMillis();
             logger.info("Spotify API /me/player/devices took {}ms", apiEndTime - apiStartTime);
+
+            int statusCode = response.getStatusLine().getStatusCode();
             
             String responseBody = EntityUtils.toString(response.getEntity());
             EntityUtils.consume(response.getEntity());
+
+            if (statusCode >= 400) {
+                logger.error("Get devices request failed with status {}: {}", statusCode, responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
+            }
             
             DevicesDto result = objectMapper.readValue(responseBody, DevicesDto.class);
             long endTime = System.currentTimeMillis();
@@ -219,10 +257,7 @@ public class SpotifyService {
 
             if (statusCode >= 400) {
                 logger.error("Get current playback request failed with status {}: {}", statusCode, responseBody);
-                if (statusCode == 429) {
-                    throw new IOException("Spotify API rate limit exceeded");
-                }
-                throw new IOException("Spotify API error: " + responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
             }
             
             PlaybackDto playback = objectMapper.readValue(responseBody, PlaybackDto.class);
@@ -269,7 +304,7 @@ public class SpotifyService {
             if (statusCode >= 400) {
                 String responseBody = EntityUtils.toString(response.getEntity());
                 logger.error("Play request failed with status {}: {}", statusCode, responseBody);
-                throw new IOException("Spotify API error: " + responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
             }
             EntityUtils.consume(response.getEntity());
             
@@ -312,7 +347,7 @@ public class SpotifyService {
             if (statusCode >= 400) {
                 String responseBody = EntityUtils.toString(response.getEntity());
                 logger.error("PlayContext request failed with status {}: {}", statusCode, responseBody);
-                throw new IOException("Spotify API error: " + responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
             }
             EntityUtils.consume(response.getEntity());
             
@@ -339,6 +374,13 @@ public class SpotifyService {
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             long apiEndTime = System.currentTimeMillis();
             logger.info("Spotify API /me/player/pause took {}ms", apiEndTime - apiStartTime);
+
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode >= 400) {
+                String responseBody = EntityUtils.toString(response.getEntity());
+                logger.error("Pause request failed with status {}: {}", statusCode, responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
+            }
             EntityUtils.consume(response.getEntity());
             
             long endTime = System.currentTimeMillis();
@@ -364,6 +406,13 @@ public class SpotifyService {
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             long apiEndTime = System.currentTimeMillis();
             logger.info("Spotify API /me/player/next took {}ms", apiEndTime - apiStartTime);
+
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode >= 400) {
+                String responseBody = EntityUtils.toString(response.getEntity());
+                logger.error("Next request failed with status {}: {}", statusCode, responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
+            }
             EntityUtils.consume(response.getEntity());
             
             long endTime = System.currentTimeMillis();
@@ -389,6 +438,13 @@ public class SpotifyService {
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             long apiEndTime = System.currentTimeMillis();
             logger.info("Spotify API /me/player/previous took {}ms", apiEndTime - apiStartTime);
+
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode >= 400) {
+                String responseBody = EntityUtils.toString(response.getEntity());
+                logger.error("Previous request failed with status {}: {}", statusCode, responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
+            }
             EntityUtils.consume(response.getEntity());
             
             long endTime = System.currentTimeMillis();
@@ -419,6 +475,13 @@ public class SpotifyService {
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             long apiEndTime = System.currentTimeMillis();
             logger.info("Spotify API /me/player (transfer) took {}ms", apiEndTime - apiStartTime);
+
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode >= 400) {
+                String responseBody = EntityUtils.toString(response.getEntity());
+                logger.error("Transfer playback request failed with status {}: {}", statusCode, responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
+            }
             EntityUtils.consume(response.getEntity());
             
             long endTime = System.currentTimeMillis();
@@ -452,7 +515,7 @@ public class SpotifyService {
             if (statusCode >= 400) {
                 String responseBody = EntityUtils.toString(response.getEntity());
                 logger.error("Seek request failed with status {}: {}", statusCode, responseBody);
-                throw new IOException("Spotify API error: " + responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
             }
             EntityUtils.consume(response.getEntity());
             
@@ -488,7 +551,7 @@ public class SpotifyService {
             if (statusCode >= 400) {
                 String responseBody = EntityUtils.toString(response.getEntity());
                 logger.error("Set volume request failed with status {}: {}", statusCode, responseBody);
-                throw new IOException("Spotify API error: " + responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
             }
             EntityUtils.consume(response.getEntity());
             
@@ -525,10 +588,7 @@ public class SpotifyService {
 
             if (statusCode >= 400) {
                 logger.error("Get queue request failed with status {}: {}", statusCode, responseBody);
-                if (statusCode == 429) {
-                    throw new IOException("Spotify API rate limit exceeded");
-                }
-                throw new IOException("Spotify API error: " + responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
             }
 
             QueueDto result = objectMapper.readValue(responseBody, QueueDto.class);
@@ -615,7 +675,7 @@ public class SpotifyService {
             if (statusCode >= 400) {
                 String responseBody = EntityUtils.toString(response.getEntity());
                 logger.error("Add to queue request failed with status {}: {}", statusCode, responseBody);
-                throw new IOException("Spotify API error: " + responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
             }
 
             EntityUtils.consume(response.getEntity());
@@ -714,7 +774,7 @@ public class SpotifyService {
             EntityUtils.consume(response.getEntity());
 
             if (statusCode >= 400) {
-                throw new IOException("Spotify API error: " + responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
             }
 
             return objectMapper.readTree(responseBody);
@@ -738,9 +798,16 @@ public class SpotifyService {
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             long apiEndTime = System.currentTimeMillis();
             logger.info("Spotify API /me/playlists took {}ms", apiEndTime - apiStartTime);
+
+            int statusCode = response.getStatusLine().getStatusCode();
             
             String responseBody = EntityUtils.toString(response.getEntity());
             EntityUtils.consume(response.getEntity());
+
+            if (statusCode >= 400) {
+                logger.error("Get playlists request failed with status {}: {}", statusCode, responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
+            }
             
             SearchResultDto.PlaylistsDto result = objectMapper.readValue(responseBody, SearchResultDto.PlaylistsDto.class);
             
@@ -776,9 +843,16 @@ public class SpotifyService {
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             long apiEndTime = System.currentTimeMillis();
             logger.info("Spotify API /me/tracks took {}ms", apiEndTime - apiStartTime);
+
+            int statusCode = response.getStatusLine().getStatusCode();
             
             String responseBody = EntityUtils.toString(response.getEntity());
             EntityUtils.consume(response.getEntity());
+
+            if (statusCode >= 400) {
+                logger.error("Get liked songs request failed with status {}: {}", statusCode, responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
+            }
             
             // Spotify returns saved tracks in a wrapper with "added_at" field
             // We need to parse it and extract the tracks
@@ -833,6 +907,11 @@ public class SpotifyService {
             
             logger.debug("Recently played response status: {}", statusCode);
             logger.debug("Recently played response body: {}", responseBody);
+
+            if (statusCode >= 400) {
+                logger.error("Get recently played request failed with status {}: {}", statusCode, responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
+            }
             
             RecentlyPlayedResponse result = objectMapper.readValue(responseBody, RecentlyPlayedResponse.class);
             
@@ -872,8 +951,15 @@ public class SpotifyService {
             long apiEndTime = System.currentTimeMillis();
             logger.info("Spotify API /albums/{id}/tracks took {}ms", apiEndTime - apiStartTime);
 
+            int statusCode = response.getStatusLine().getStatusCode();
+
             String responseBody = EntityUtils.toString(response.getEntity());
             EntityUtils.consume(response.getEntity());
+
+            if (statusCode >= 400) {
+                logger.error("Get album tracks request failed with status {}: {}", statusCode, responseBody);
+                throwSpotifyApiError(statusCode, responseBody);
+            }
 
             SearchResultDto.TracksDto result = objectMapper.readValue(responseBody, SearchResultDto.TracksDto.class);
             if (result.getItems() != null) {
