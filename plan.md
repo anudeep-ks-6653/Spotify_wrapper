@@ -1,5 +1,32 @@
 # Plan: Push Spotify Wrapper to GitHub
 
+## Implementation Update (May 2026)
+
+### Delivered
+- Added album detail view to display album items (tracks) in a modal.
+- Added **Tracks** action on album cards in search results.
+- Added pagination controls in detail modal for album tracks.
+- Added quick actions in detail modal: **Play**, **Add to Queue**, **Play All**.
+- Added frontend module integration:
+   - `frontend/js/detail.js`
+   - detail templates/modal in `frontend/index.html`
+   - detail styles in `frontend/css/styles.css`
+   - module initialization in `frontend/js/auth.js`
+
+### Scope Decision
+- Playlist detail-track fetch implementation was intentionally rolled back.
+- Current supported detail view scope: **Albums only**.
+
+### Issues Faced During Process
+- **Detail module wiring bug**: event handlers were not firing until the module was correctly exported and initialized.
+- **Spotify playlist track access (403)**: repeated forbidden responses for playlist-track APIs complicated multi-source detail support.
+- **Token/consent troubleshooting overhead**: OAuth scope/consent behavior made playlist-track debugging non-deterministic.
+- **Debugging user context mismatch**: API tests with non-persisted user IDs caused misleading user-not-found/internal errors.
+- **Repeated backend restarts while testing**: required multiple restart/verification cycles before stabilizing behavior.
+
+### Follow-Up (Optional)
+- Add a small in-app info message clarifying that detail view is currently available for albums only.
+
 ## Prerequisites
 - [ ] GitHub account
 - [ ] Git installed on your machine

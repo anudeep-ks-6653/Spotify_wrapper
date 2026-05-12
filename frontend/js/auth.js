@@ -175,6 +175,9 @@ const Auth = {
         if (window.PlayerModule) {
             window.PlayerModule.init();
         }
+        if (window.DetailView) {
+            window.DetailView.init();
+        }
     },
     
     // Show loading state

@@ -2,6 +2,24 @@
 
 A full-stack web application that wraps the Spotify Web API, allowing users to search for music, manage playlists, control playback, and view their library.
 
+## Recent Changes (May 2026)
+
+- Added album detail view modal to browse album items (tracks) with pagination.
+- Added album-level **Tracks** button in search result cards.
+- Added track actions inside detail view: **Play**, **Add to Queue**, and **Play All** for album context.
+- Added frontend module `detail.js` and initialized it during dashboard load.
+- Added detail-view Handlebars row template and modal markup in `frontend/index.html`.
+- Added detail-view row hover/number styles in `frontend/css/styles.css`.
+- Kept scope intentionally limited to **albums only** (playlist detail fetch changes were rolled back).
+
+## Issues Faced During Implementation
+
+- **Module initialization issue**: detail view click handlers did not work initially because the module was not exported to `window`; fixed by exporting `DetailView` and initializing it after login.
+- **Playlist track API failures (403)**: Spotify playlist track fetch repeatedly returned 403 (including owned playlists), indicating token/scope/access restrictions in real usage.
+- **OAuth re-consent gap**: stale consent state made playlist scope validation difficult; forcing consent dialog helped testing, but playlist-related detail fetch was later removed per scope decision.
+- **Manual API test confusion**: requests without a valid persisted `userId` produced user-not-found/5xx behavior while debugging; confirmed frontend path works with authenticated app user context.
+- **Feature scope adjustment**: playlist detail-view patches were reverted to reduce instability; album detail view remains the supported path.
+
 ## Features
 
 - 🎵 **Search**: Search for songs, artists, albums, and playlists
@@ -14,6 +32,7 @@ A full-stack web application that wraps the Spotify Web API, allowing users to s
 - 🔐 **OAuth Integration**: Secure authentication with Spotify
 - 💾 **Database Storage**: Persistent user data and token management
 - 🔄 **Auto-Refresh**: Recently played tracks refresh automatically every minute
+- 🔎 **Album Detail View**: Open album track list in a modal with paging and quick playback actions
 - ♿ **WCAG Level A Accessible**: Full keyboard navigation, ARIA labels, screen reader support, semantic HTML structure
 
 ## Tech Stack
@@ -153,6 +172,7 @@ The script detects processes by port (9090 / 3000) and Spring Boot / Python serv
    - Artist names are clickable and open the Spotify artist page
    - Use **Add to Queue** on tracks to queue without interrupting playback
    - Album **Add to Queue** now queues album tracks via backend expansion
+   - Albums include a **Tracks** button to open a detail modal (album items only)
 4. **Library**: Browse recently played tracks, liked songs, and your playlists (Recently Played is the default sub-tab)
    - Liked Songs and Recently Played support **Add to Queue**
 5. **Devices**: View and select available Spotify devices
@@ -247,6 +267,7 @@ spotify/
 │   │   ├── app.js          # Main application
 │   │   ├── auth.js         # Authentication
 │   │   ├── config.js       # API endpoints
+│   │   ├── detail.js       # Album detail-view modal
 │   │   ├── devices.js      # Device management
 │   │   ├── library.js      # Library features
 │   │   ├── player.js       # Playback controls

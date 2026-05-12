@@ -319,3 +319,15 @@ body {
 .pagination .page-item.disabled .page-link {
     color: #6c757d;
 }
+
+/* Detail view modal track rows */
+.detail-track-row {
+    transition: background-color 0.15s;
+}
+.detail-track-row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+.detail-track-num {
+    color: var(--bs-secondary-color, #6c757d);
+    font-variant-numeric: tabular-nums;
+}
