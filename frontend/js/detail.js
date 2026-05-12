@@ -178,7 +178,7 @@ const DetailView = {
         window.PlayerModule?.playTrack(uri, name);
     },
 
-    handleAddToQueue(e) {
+    async handleAddToQueue(e) {
         const $btn = $(e.currentTarget);
         const uri = $btn.data('uri');
         const name = $btn.data('name');
@@ -188,7 +188,25 @@ const DetailView = {
             return;
         }
 
-        window.PlayerModule?.addToQueue(uri, name);
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+        try {
+            const deviceId = window.PlayerModule?.deviceId || null;
+            await SpotifyAPI.addToQueue(uri, deviceId);
+            if (window.Utils?.showSuccess) {
+                Utils.showSuccess(`Added to queue: ${name}`);
+            }
+            if (window.PlayerModule) {
+                PlayerModule.updateQueue();
+            }
+        } catch (error) {
+            console.error('Error adding to queue:', error);
+            if (window.Utils?.showError) {
+                Utils.showError(error.message || 'Failed to add to queue. Make sure you have an active Spotify device.');
+            }
+        } finally {
+            $btn.prop('disabled', false).html('<i class="fas fa-list-ul"></i>');
+        }
     },
 
     handlePlayAll(e) {
