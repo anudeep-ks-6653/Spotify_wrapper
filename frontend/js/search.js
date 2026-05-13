@@ -323,7 +323,8 @@ const SearchModule = {
             return;
         }
 
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Adding...');
+        // Show only a spinner icon while loading
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
 
         try {
             const deviceId = window.PlayerModule?.deviceId || null;
@@ -336,7 +337,8 @@ const SearchModule = {
             console.error('Failed to add to queue:', error);
             Utils.showError(error.message || CONFIG.ERRORS.PLAYBACK_FAILED);
         } finally {
-            $btn.prop('disabled', false).html('<i class="fas fa-list-ul me-1"></i>Add to Queue');
+            // Restore to icon-only button (no text)
+            $btn.prop('disabled', false).html('<i class="fas fa-list-ul"></i>');
         }
     },
     
